@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# publish-guard-ack: record the explicit acknowledgement that the
+# public-content checklist was printed for the given action(s).
+#
+# Usage:
+#   publish-guard-ack <action>... [--repo <dir|owner/repo>]
+#   publish-guard-ack --status
+#
+# Actions: commit push pr-create pr-merge pr-edit pr-comment pr-review
+#          pr-close issue-create issue-edit issue-comment issue-close
+#          release api repo-edit gist
+#
+# The acknowledgement is single-use, bound to the current Claude Code
+# session ($CLAUDE_CODE_SESSION_ID), the action and the repository, and
+# expires after 10 minutes. The hook consumes it when the publish command
+# runs. Must be invoked in its own Bash call so the user can see it.
+
+set -euo pipefail
+
+ACTIONS="commit push pr-create pr-merge pr-edit pr-comment pr-review pr-close issue-create issue-edit issue-comment issue-close release api repo-edit gist"
+TTL_MIN=$(( ${PUBLISH_GUARD_TTL:-600} / 60 ))
+
+die() { printf 'publish-guard-ack: %s\n' "$*" >&2; exit 1; }
+
+base_dir() {
+    if [[ -n "${XDG_RUNTIME_DIR:-}" && -d "${XDG_RUNTIME_DIR}" ]]; then
+        printf '%s/publish-guard' "${XDG_RUNTIME_DIR}"
+    else
+        printf '%s/publish-guard-%s' "${TMPDIR:-/tmp}" "$(id -u)"
+    fi
+}
+
+repo_key() {
+    local arg="$1"
+    if [[ -d "$arg" ]]; then
+        if git -C "$arg" rev-parse --show-toplevel >/dev/null 2>&1; then
+            realpath "$(git -C "$arg" rev-parse --show-toplevel)"
+        else
+            realpath "$arg"
+        fi
+    else
+        printf '%s' "$arg"   # owner/repo as given to gh -R
+    fi
+}
+
+session="${CLAUDE_CODE_SESSION_ID:-}"
+[[ -n "$session" ]] || die "CLAUDE_CODE_SESSION_ID is not set; run this from a Claude Code Bash tool call"
+[[ "$session" =~ ^[A-Za-z0-9._-]+$ ]] || die "unexpected session id format"
+
+dir="$(base_dir)/$session"
+
+if [[ "${1:-}" == "--status" ]]; then
+    if [[ ! -d "$dir" ]]; then echo "no acknowledgements for this session"; exit 0; fi
+    now=$(date +%s)
+    found=0
+    for f in "$dir"/*.json; do
+        [[ -e "$f" ]] || continue
+        found=1
+        age=$(( now - $(stat -c %Y "$f") ))
+        printf '%s  age=%ss  %s\n' "$(basename "$f" .json)" "$age" "$(tr -d '\n' < "$f")"
+    done
+    [[ $found -eq 1 ]] || echo "no acknowledgements for this session"
+    exit 0
+fi
+
+repo_arg=""
+actions=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --repo) [[ $# -ge 2 ]] || die "--repo needs a value"; repo_arg="$2"; shift 2 ;;
+        --repo=*) repo_arg="${1#--repo=}"; shift ;;
+        -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+        -*) die "unknown option $1" ;;
+        *) actions+=("$1"); shift ;;
+    esac
+done
+[[ ${#actions[@]} -gt 0 ]] || die "no action given; valid: $ACTIONS"
+for a in "${actions[@]}"; do
+    case " $ACTIONS " in
+        *" $a "*) ;;
+        *) die "unknown action '$a'; valid: $ACTIONS" ;;
+    esac
+done
+
+key="$(repo_key "${repo_arg:-$PWD}")"
+hash="$(printf '%s' "$key" | sha256sum | cut -c1-12)"
+
+umask 077
+mkdir -p "$dir"
+chmod 700 "$(base_dir)" "$dir" 2>/dev/null || true
+created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+for a in "${actions[@]}"; do
+    printf '{"action":"%s","repo":"%s","session":"%s","created":"%s"}\n' \
+        "$a" "$key" "$session" "$created" > "$dir/$a.$hash.json"
+done
+printf 'publish-guard: acknowledged %s for %s (valid %s min, single use)\n' \
+    "${actions[*]}" "$key" "$TTL_MIN"

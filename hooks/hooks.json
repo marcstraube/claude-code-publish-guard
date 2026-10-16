@@ -1,0 +1,20 @@
+{
+  "description": "publish-guard: block Bash commands that publish text to a remote until the text passed the denylist and Claude recorded an explicit acknowledgement",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/publish_guard.py"],
+            "timeout": 30,
+            "onFailure": "block",
+            "statusMessage": "publish-guard: inspecting command"
+          }
+        ]
+      }
+    ]
+  }
+}

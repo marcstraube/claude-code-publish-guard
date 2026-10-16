@@ -1,0 +1,57 @@
+# publish-guard builtin patterns
+#
+# One Python regular expression per line, matched case-insensitively against
+# every line of the text that is about to be published. Lines starting with
+# `#` are comments. Section headers select where a pattern applies:
+#
+#   [always]         any published text (reserved for a future diff scan too)
+#   [messages-only]  commit messages, PR/issue/release/comment bodies
+#
+# This file ships with the plugin and must stay free of anything private.
+# Put hostnames, usernames and internal domains in your private denylist
+# (see templates/denylist.example.txt).
+
+[always]
+# private IPv4 ranges and link-local
+\b10\.\d{1,3}\.\d{1,3}\.\d{1,3}\b
+\b192\.168\.\d{1,3}\.\d{1,3}\b
+\b172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}\b
+\b169\.254\.\d{1,3}\.\d{1,3}\b
+# IPv6 unique-local and link-local
+\bf[cd][0-9a-f]{2}:[0-9a-f:]+
+\bfe80:[0-9a-f:]+
+# e-mail addresses, except bot/noreply addresses that are public anyway
+\b(?!noreply@)[A-Z0-9._%+-]+@(?!users\.noreply\.)[A-Z0-9.-]+\.[A-Z]{2,}\b
+# home directories and other machine-local paths
+/home/[a-z_][a-z0-9_-]*/
+/Users/[a-z_][a-z0-9_-]*/
+# vault / inventory internals
+\bvault_[a-z0-9_]+
+\binventory/(host_vars|group_vars)/
+# WireGuard / VPN specifics
+\bwg\d\b
+\b(allowed_ips|endpoint)\s*[:=]\s*\d
+# shell prompts copied from real hosts: user@host:path$
+\b[a-z_][a-z0-9_-]*@[a-z0-9-]+:[~/][^\s]*[$#]
+
+[messages-only]
+# self-referential phrases about one's own environment
+\bin (the |our |my )?inventory\b
+\b(on|from) my (workstation|laptop|machine|server|desktop)\b
+\bour (setup|infra(structure)?|servers?|hosts?|network|environment|homelab)\b
+\bwe have\b
+\bcurrently (enabled|disabled|running|deployed|in use)\b
+\blive[- ]tested\b
+\btested (live )?on (my|our|the) \w+\b
+# status of internal things
+\bstill in dev(elopment)?\b
+\bWIP\b
+\bwork in progress\b
+\bhaven'?t (yet )?(tested|verified|checked)\b
+\bnot (yet )?tested\b
+\buntested\b
+\bintentionally (left out|omitted|skipped|excluded)\b
+\bnot listed because\b
+\bout[- ]of[- ]scope\b
+\bfor now\b
+\btemporary (workaround|hack|fix)\b

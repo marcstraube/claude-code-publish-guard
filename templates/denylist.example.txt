@@ -1,0 +1,29 @@
+# publish-guard private denylist
+#
+# This file lives OUTSIDE the plugin so it never ends up in a repository.
+# Keep it mode 0600. One Python regular expression per line, matched
+# case-insensitively against each line of the text about to be published.
+#
+# Sections:
+#   [always]         applies to any published text
+#   [messages-only]  applies to commit messages, PR/issue/release/comment bodies
+#
+# Use word boundaries so legitimate names are not caught, for example
+# `\bjane\b` matches "jane" but not the public namespace "janedoe".
+#
+# A hit blocks the command hard; there is no override flag. If a pattern
+# causes a false positive, reword the text or refine the pattern here.
+
+[always]
+# hostnames of your own machines and servers
+# \bbastion01\b
+# \bnas02\b
+# internal domains
+# \bhome\.arpa\b
+# \.lan\b
+# usernames and real names
+# \bjdoe\b
+
+[messages-only]
+# phrases that only matter in prose, not in code
+# \bthe customer\b

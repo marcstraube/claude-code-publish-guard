@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# publish-guard-check: dry-run a text against the publish-guard denylists.
+#
+# Usage:
+#   publish-guard-check <file>
+#   publish-guard-check - < file        (or any stdin / heredoc)
+#   publish-guard-check --classify '<bash command>'   show what would be gated
+#
+# Exit 0 when clean, 1 on a denylist hit, 2 on error.
+set -euo pipefail
+here="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+hook="$here/hooks/publish_guard.py"
+case "${1:-}" in
+    --classify) shift; exec python3 "$hook" --classify "$@" ;;
+    -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
+    *) exec python3 "$hook" --check "${1:--}" ;;
+esac

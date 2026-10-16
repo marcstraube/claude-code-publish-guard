@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Configure git identity for the end-to-end tests
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@example.invalid"
+          git config --global init.defaultBranch main
+
+      - name: Run unit and end-to-end tests
+        run: python3 -m unittest discover -s tests -v
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Shellcheck
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q shellcheck
+          shellcheck bin/*
+
+      - name: Validate JSON manifests
+        run: |
+          python3 -m json.tool .claude-plugin/plugin.json > /dev/null
+          python3 -m json.tool hooks/hooks.json > /dev/null
+          python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
+
+      - name: Byte-compile the hook
+        run: python3 -m py_compile hooks/publish_guard.py
+
+  validate:
+    name: Plugin manifest validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate plugin and marketplace manifests
+        run: claude plugin validate . --strict

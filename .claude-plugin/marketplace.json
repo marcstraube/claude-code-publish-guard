@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "marcstraube",
+  "owner": {
+    "name": "Marc Straube",
+    "email": "email@marcstraube.de"
+  },
+  "metadata": {
+    "description": "Claude Code plugins by Marc Straube",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "publish-guard",
+      "source": "./",
+      "description": "Blocks git commit/push, gh and glab publish commands until the text passed a private denylist and Claude recorded a single-use acknowledgement.",
+      "version": "0.1.0",
+      "category": "security",
+      "keywords": ["git", "github", "gitlab", "privacy", "hooks", "publish", "denylist"]
+    }
+  ]
+}

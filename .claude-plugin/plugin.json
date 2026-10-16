@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "publish-guard",
+  "displayName": "Publish Guard",
+  "version": "0.1.0",
+  "description": "Gate for text that leaves the machine: a denylist scan plus an explicit acknowledgement checklist before git commit/push, gh pr/issue/release/api writes and their glab equivalents.",
+  "author": {
+    "name": "Marc Straube",
+    "email": "email@marcstraube.de"
+  },
+  "repository": "https://github.com/marcstraube/claude-code-publish-guard",
+  "license": "MIT",
+  "keywords": ["hooks", "git", "github", "security", "privacy", "guardrail"],
+  "userConfig": {
+    "config_dir": {
+      "type": "directory",
+      "title": "Config directory",
+      "description": "Directory holding your private denylist.txt (hostnames, usernames, internal domains). Created with a commented template on first use. Default: ~/.config/claude-code-publish-guard",
+      "default": "~/.config/claude-code-publish-guard"
+    }
+  }
+}
