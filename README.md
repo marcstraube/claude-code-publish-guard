@@ -172,14 +172,6 @@ non-gated shape listed above, extraction against a fake runner, the denylists,
 the acknowledgement store (including the bash script), and end-to-end hook
 decisions against a temporary git repository with a bare remote.
 
-## Roadmap
-
-- Optional scan of added diff lines for the `[always]` section, enabled per
-  repository (hostnames in a private inventory repository are legitimate).
-- Strict mode: the block message carries a hash of the extracted text and the
-  acknowledgement binds to it.
-- Git-level `commit-msg` / `pre-push` hooks as a layer independent of Claude.
-
 ## License
 
 MIT, see `LICENSE`.
